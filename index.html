@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Emergency Alert System</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" />
+    <link rel="stylesheet" href="css/style.css" />
+  </head>
+  <body>
+    <div class="container mt-5">
+      <h1 class="text-center">Emergency Alert System</h1>
+      <div class="alert alert-secondary d-flex align-items-center" role="alert" style="width: 100%; height: 500px">
+        <svg class="bi flex-shrink-0 me-2" width="24" height="24" role="img" aria-label="Danger:"><use xlink:href="#exclamation-triangle-fill" /></svg>
+        <div>
+          <h3 id="emergencyTitle">Status: AMAN</h3>
+          <p id="emergencyMessage">Tidak ada bahaya terdeteksi.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- <script src="js/script.js"></script> -->
+
+    <script src="https://unpkg.com/mqtt/dist/mqtt.min.js"></script>
+
+    <script>
+      const clientId = Math.random().toString(16).substr(2, 8);
+
+      const host = "wss://broker.emqx.io:8084/mqtt";
+      const options = {
+        keepalive: 30,
+        clientId: clientId,
+        protocolId: "MQTT",
+        protocolVersion: 4,
+        clean: true,
+        reconnectPeriod: 1000,
+        connectTimeout: 30 * 1000,
+      };
+      console.log("connecting mqtt client");
+      const client = mqtt.connect(host, options);
+
+      client.on("connect", () => {
+        console.log("client connected:" + clientId);
+        client.subscribe("diva/#", { qos: 1 });
+      });
+
+      client.on("message", (topic, message, packet) => {
+        console.log("Received Message:= " + message.toString() + "\nOn topic:= " + topic);
+        function updateAlert(level, title, message, alertClass) {
+          document.getElementById("emergencyTitle").innerText = title;
+          document.getElementById("emergencyMessage").innerText = message;
+          const alertDiv = document.querySelector(".alert");
+          alertDiv.className = `alert d-flex align-items-center ${alertClass}`;
+        }
+
+        const emergencyLevels = {
+          Merah: { title: "BAHAYA SANGAT TINGGI", message: "Tombol Merah ditekan. Segera ambil tindakan darurat.", class: "alert-danger" },
+          Kuning: { title: "BAHAYA SEDANG", message: "Tombol Kuning ditekan. Waspada dan persiapkan evakuasi.", class: "alert-warning" },
+          Hijau: { title: "BAHAYA RENDAH", message: "Tombol Hijau ditekan. Tetap waspada dan siaga.", class: "alert-success" },
+          Biru: { title: "INFORMASI", message: "Tombol Biru ditekan. Periksa area sekitar untuk memastikan keamanan.", class: "alert-primary" },
+          Putih: { title: "STATUS AMAN", message: "Tombol Putih ditekan. Tidak ada bahaya terdeteksi.", class: "alert-secondary" },
+        };
+
+        if (message == "1" && emergencyLevels[topic.split("/")[1]]) {
+          const { title, message, class: alertClass } = emergencyLevels[topic.split("/")[1]];
+          updateAlert(topic.split("/")[1], title, message, alertClass);
+        }
+
+        // if (topic == "diva/Merah") {
+        //   if (message == "0") {
+        //     document.getElementById("emergencyTitle").innerText = "BAHAYA SANGAT TINGGI";
+        //     document.getElementById("emergencyMessage").innerText = "Tombol Merah ditekan. Segera ambil tindakan darurat.";
+        //     const alertDiv = document.querySelector(".alert");
+        //     alertDiv.className = `alert d-flex align-items-center ${"alert-danger"}`;
+        //   }
+        // }
+
+        // if (topic == "diva/Kuning") {
+        //   if (message == "0") {
+        //     document.getElementById("emergencyTitle").innerText = "BAHAYA SEDANG";
+        //     document.getElementById("emergencyMessage").innerText = "Tombol Kuning ditekan. Waspada dan persiapkan evakuasi.";
+        //     const alertDiv = document.querySelector(".alert");
+        //     alertDiv.className = `alert d-flex align-items-center ${"alert-warning"}`;
+        //   }
+        // }
+
+        // if (topic == "diva/Hijau") {
+        //   if (message == "0") {
+        //     document.getElementById("emergencyTitle").innerText = "BAHAYA RENDAH";
+        //     document.getElementById("emergencyMessage").innerText = "Tombol Hijau ditekan. Tetap waspada dan siaga.";
+        //     const alertDiv = document.querySelector(".alert");
+        //     alertDiv.className = `alert d-flex align-items-center ${"alert-success"}`;
+        //   }
+        // }
+        // if (topic == "diva/Biru") {
+        //   if (message == "0") {
+        //     document.getElementById("emergencyTitle").innerText = "INFORMASI";
+        //     document.getElementById("emergencyMessage").innerText = "Tombol Biru ditekan. Periksa area sekitar untuk memastikan keamanan.";
+        //     const alertDiv = document.querySelector(".alert");
+        //     alertDiv.className = `alert d-flex align-items-center ${"alert-primary"}`;
+        //   }
+        // }
+        // if (topic == "diva/Putih") {
+        //   if (message == "0") {
+        //     document.getElementById("emergencyTitle").innerText = "STATUS AMAN";
+        //     document.getElementById("emergencyMessage").innerText = "Tombol Putih ditekan. Tidak ada bahaya terdeteksi.";
+        //     const alertDiv = document.querySelector(".alert");
+        //     alertDiv.className = `alert d-flex align-items-center ${"alert-secondary"}`;
+        //   }
+        // }
+      });
+    </script>
+  </body>
+</html>
